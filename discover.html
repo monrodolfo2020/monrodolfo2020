@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta name="theme-color" content="#ec5b13"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+
+  <script>
+    (function() {
+      try {
+        var p = JSON.parse(localStorage.getItem('melodic_past_progress') || '{}');
+        if (p.darkMode) document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
+
+  <script>
+    tailwind = { config: {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#ec5b13",
+            "background-light": "#f8f6f6",
+            "background-dark": "#221610",
+          },
+          fontFamily: { "display": ["Inter", "sans-serif"] },
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+  <title>Explorar — The Melodic Past</title>
+  <style>
+    body { min-height: 100dvh; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; }
+    .filter-chip.active { background-color: #ec5b13; color: white; }
+    .fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400; }
+  </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-28">
+
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-50">
+    <div class="px-4 py-4 max-w-2xl mx-auto w-full">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="bg-primary/10 p-2 rounded-lg">
+            <span class="material-symbols-outlined text-primary">explore</span>
+          </div>
+          <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">Explorar</h1>
+        </div>
+        <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">12 canciones</span>
+      </div>
+      <!-- Search -->
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+        <input id="search-input" type="text" placeholder="Buscar canción, artista o tema..."
+          class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 pt-4">
+
+    <!-- Filter Chips -->
+    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar mb-4">
+      <button class="filter-chip active flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold border border-primary/30 transition-all" data-filter="all">
+        Todas
+      </button>
+      <button class="filter-chip flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all" data-filter="completed">
+        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Completadas</span>
+      </button>
+      <button class="filter-chip flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all" data-filter="available">
+        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">play_arrow</span> Disponibles</span>
+      </button>
+      <button class="filter-chip flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all" data-filter="locked">
+        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">lock</span> Bloqueadas</span>
+      </button>
+    </div>
+
+    <!-- Results Count -->
+    <p id="results-count" class="text-xs text-slate-500 dark:text-slate-400 mb-3 px-1">Mostrando 12 de 12 canciones</p>
+
+    <!-- Song Grid -->
+    <div id="discover-grid" class="grid grid-cols-2 gap-3">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+      <span class="material-symbols-outlined text-slate-300 dark:text-slate-600 text-[64px] mb-4">search_off</span>
+      <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-2">Sin resultados</h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Intenta con otro término de búsqueda</p>
+    </div>
+
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-50">
+    <div class="flex max-w-2xl mx-auto px-4 py-2">
+      <a href="index.html" data-nav="lessons" class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[22px]">school</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider">Lecciones</span>
+      </a>
+      <a href="discover.html" data-nav="discover" class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-primary transition-colors">
+        <span class="material-symbols-outlined fill-icon text-[22px]">explore</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider">Explorar</span>
+      </a>
+      <a href="profile.html" data-nav="profile" class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[22px]">person</span>
+        <span class="text-[10px] font-bold uppercase tracking-wider">Perfil</span>
+      </a>
+    </div>
+  </nav>
+
+  <script type="module">
+    import { LESSONS } from './js/data.js';
+    import { isCompleted, isLocked } from './js/progress.js';
+    import { showToast } from './js/app.js';
+
+    let currentFilter = 'all';
+    let searchTerm = '';
+
+    function getFilteredLessons() {
+      return LESSONS.filter(lesson => {
+        // Search filter
+        if (searchTerm) {
+          const q = searchTerm.toLowerCase();
+          const match = lesson.song.toLowerCase().includes(q) ||
+            lesson.artist.toLowerCase().includes(q) ||
+            lesson.grammarTopic.toLowerCase().includes(q) ||
+            lesson.grammarES.toLowerCase().includes(q);
+          if (!match) return false;
+        }
+        // Status filter
+        if (currentFilter === 'completed') return isCompleted(lesson.week);
+        if (currentFilter === 'available') return !isLocked(lesson.week);
+        if (currentFilter === 'locked') return isLocked(lesson.week);
+        return true;
+      });
+    }
+
+    function renderGrid() {
+      const lessons = getFilteredLessons();
+      const grid = document.getElementById('discover-grid');
+      const emptyState = document.getElementById('empty-state');
+      const resultsCount = document.getElementById('results-count');
+
+      resultsCount.textContent = `Mostrando ${lessons.length} de ${LESSONS.length} canciones`;
+
+      if (lessons.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = lessons.map(lesson => {
+        const thumbUrl = `https://img.youtube.com/vi/${lesson.youtubeId}/hqdefault.jpg`;
+        const locked = isLocked(lesson.week);
+        const completed = isCompleted(lesson.week);
+
+        let statusBadge = '';
+        if (completed) {
+          statusBadge = `<div class="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">✓ Completada</div>`;
+        } else if (!locked) {
+          statusBadge = `<div class="absolute top-2 left-2 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full">Disponible</div>`;
+        }
+
+        return `
+          <div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden border ${locked ? 'border-slate-200 dark:border-slate-800 opacity-70' : completed ? 'border-green-200 dark:border-green-900' : 'border-primary/20'} shadow-sm cursor-pointer hover:shadow-md transition-all"
+               data-week="${lesson.week}" onclick="handleCardClick(${lesson.week}, ${locked})">
+            <!-- Thumbnail -->
+            <div class="relative h-28 bg-slate-200 dark:bg-slate-800">
+              <img src="${thumbUrl}" alt="${lesson.song}" class="w-full h-full object-cover ${locked ? 'grayscale-[0.7]' : ''}"/>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              ${statusBadge}
+              <div class="absolute bottom-2 right-2 bg-black/50 rounded-full p-1">
+                <span class="material-symbols-outlined text-white text-[16px]">${locked ? 'lock' : 'play_circle'}</span>
+              </div>
+              <div class="absolute bottom-2 left-2 bg-black/50 rounded-full px-1.5 py-0.5">
+                <span class="text-white text-[9px] font-bold">S${lesson.week}</span>
+              </div>
+            </div>
+            <!-- Info -->
+            <div class="p-3 space-y-1">
+              <p class="text-xs font-bold text-primary truncate">${lesson.grammarES}</p>
+              <p class="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">"${lesson.song}"</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${lesson.artist}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.handleCardClick = function(weekNum, locked) {
+      if (locked) {
+        showToast('Completa las lecciones anteriores primero 🔒', 'info');
+        return;
+      }
+      window.location.href = `lesson.html?week=${weekNum}`;
+    };
+
+    // Filter chips
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        currentFilter = chip.dataset.filter;
+        document.querySelectorAll('.filter-chip').forEach(c => {
+          c.classList.remove('active');
+          c.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+        });
+        chip.classList.add('active');
+        chip.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+        renderGrid();
+      });
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', e => {
+      searchTerm = e.target.value;
+      renderGrid();
+    });
+
+    // Initial render
+    renderGrid();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

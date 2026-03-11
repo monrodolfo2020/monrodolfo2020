@@ -1,0 +1,43 @@
+{
+  "name": "The Melodic Past",
+  "short_name": "MelodicPast",
+  "description": "Aprende inglés con canciones famosas. 12 semanas de gramática a través de música.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f6f6",
+  "theme_color": "#ec5b13",
+  "lang": "es",
+  "categories": ["education", "music"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Continuar Aprendiendo",
+      "short_name": "Aprender",
+      "description": "Continúa tu lección actual",
+      "url": "/index.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Explorar Canciones",
+      "short_name": "Explorar",
+      "description": "Descubre todas las canciones",
+      "url": "/discover.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
