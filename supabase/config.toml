@@ -41,6 +41,19 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
+[realtime]
+enabled = true
+# Expose these tables via Realtime broadcast/presence/postgres-changes
+# Configure per-table replication in Supabase Dashboard > Database > Replication
+# or via SQL: ALTER PUBLICATION supabase_realtime ADD TABLE <table>;
+ip_version = "IPv4"
+max_header_length = 4096
+
+[realtime.tenant_limits]
+max_concurrent_users       = 200
+max_events_per_second      = 100
+max_bytes_per_second       = 102400
+
 [edge_runtime]
 enabled = true
 policy = "oneshot"

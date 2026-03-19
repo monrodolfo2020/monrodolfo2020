@@ -8,13 +8,15 @@ import type { UserProfile } from '@mall/types'
 import { cn } from '@/lib/utils/cn'
 
 const NAV_ITEMS = [
-  { label: 'Resumen', href: 'overview', icon: '▦' },
-  { label: 'Mantenimiento', href: 'maintenance', icon: '🔧' },
-  { label: 'Seguridad', href: 'security', icon: '🛡' },
-  { label: 'Inventario', href: 'inventory', icon: '📦' },
-  { label: 'Hallazgos', href: 'findings', icon: '🔍' },
-  { label: 'Reportes', href: 'reports', icon: '📊' },
-  { label: 'Configuración', href: 'settings', icon: '⚙' },
+  { label: 'Resumen',        href: 'overview',               icon: '▦' },
+  { label: 'Mantenimiento',  href: 'maintenance',             icon: '🔧' },
+  { label: 'Seguridad',      href: 'security',                icon: '🛡' },
+  { label: 'Checkpoints QR', href: 'security/checkpoints',    icon: '◉' },
+  { label: 'Inventario',     href: 'inventory',               icon: '📦' },
+  { label: 'Hallazgos',      href: 'findings',                icon: '🔍' },
+  { label: 'Reportes',       href: 'reports',                 icon: '📊' },
+  { label: 'Equipo',         href: 'users',                   icon: '👥' },
+  { label: 'Configuración',  href: 'settings',                icon: '⚙' },
 ]
 
 interface DashboardShellProps {
