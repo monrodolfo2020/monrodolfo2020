@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Mall Management",
+    "slug": "mall-management",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "mall-management",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0284c7"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mallmanagement.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Se requiere acceso a la cámara para tomar fotos de tareas de mantenimiento y hallazgos.",
+        "NSLocationWhenInUseUsageDescription": "Se requiere la ubicación para verificar que los escaneos de QR se realizan en el checkpoint correcto.",
+        "NSPhotoLibraryUsageDescription": "Se requiere acceso a la galería para adjuntar fotos existentes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0284c7"
+      },
+      "package": "com.mallmanagement.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-barcode-scanner",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Se requiere ubicación para verificar checkpoints de seguridad."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
