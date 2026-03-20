@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
@@ -53,11 +54,19 @@ export default async function InventoryPage({ params, searchParams }: PageProps)
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Inventario / Almacén</h1>
-        {lowStockItems.length > 0 && (
-          <span className="bg-red-100 text-red-700 text-sm px-3 py-1 rounded-full">
-            {lowStockItems.length} artículo(s) con stock bajo
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {lowStockItems.length > 0 && (
+            <span className="bg-red-100 text-red-700 text-sm px-3 py-1 rounded-full">
+              {lowStockItems.length} artículo(s) con stock bajo
+            </span>
+          )}
+          <Link
+            href={`/dashboard/${mallId}/inventory/import`}
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Importar CSV
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
