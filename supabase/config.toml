@@ -49,10 +49,6 @@ enabled = true
 ip_version = "IPv4"
 max_header_length = 4096
 
-[realtime.tenant_limits]
-max_concurrent_users       = 200
-max_events_per_second      = 100
-max_bytes_per_second       = 102400
 
 [edge_runtime]
 enabled = true

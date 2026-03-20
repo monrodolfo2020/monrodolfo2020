@@ -2,14 +2,21 @@ name: Deploy Supabase
 
 on:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
+      - "claude/mall-management-system-S8V3A"
     paths:
       - "supabase/**"
 
 jobs:
   deploy:
-    name: Deploy Supabase Migrations & Functions
+    name: Deploy Migrations & Edge Functions
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: xjyulrkarhuybgcgsdcp
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,19 +24,26 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy database migrations
-        run: supabase db push --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Link project
+        run: supabase link --project-ref $SUPABASE_PROJECT_REF
+
+      - name: Push database migrations
+        run: supabase db push --project-ref $SUPABASE_PROJECT_REF
 
       - name: Deploy Edge Functions
         run: |
           for func in supabase/functions/*/; do
             funcname=$(basename "$func")
             if [[ "$funcname" != "_shared" ]]; then
+              echo "Deploying function: $funcname"
               supabase functions deploy "$funcname" \
-                --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+                --project-ref $SUPABASE_PROJECT_REF
             fi
           done
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Set Edge Function secrets
+        run: |
+          supabase secrets set \
+            APP_SUPABASE_URL=https://xjyulrkarhuybgcgsdcp.supabase.co \
+            APP_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} \
+            --project-ref $SUPABASE_PROJECT_REF
