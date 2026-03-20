@@ -6,7 +6,7 @@ import { TaskSummaryCard } from '@/components/dashboard/task-summary-card'
 import { FindingsSummaryCard } from '@/components/dashboard/findings-summary-card'
 import { AssetStatusCard } from '@/components/dashboard/asset-status-card'
 import { ScoreTrendChart } from '@/components/dashboard/score-trend-chart'
-import { format, startOfMonth, endOfMonth, startOfDay } from 'date-fns'
+import { format, startOfMonth, startOfDay } from 'date-fns'
 
 export const metadata: Metadata = { title: 'Resumen' }
 
@@ -29,7 +29,6 @@ export default async function OverviewPage({ params }: PageProps) {
 
   const today = new Date()
   const monthStart = format(startOfMonth(today), 'yyyy-MM-dd')
-  const monthEnd = format(endOfMonth(today), 'yyyy-MM-dd')
   const todayStr = format(startOfDay(today), 'yyyy-MM-dd')
 
   // Fetch data in parallel

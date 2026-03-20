@@ -8,6 +8,7 @@
 
 import NetInfo from '@react-native-community/netinfo'
 import * as FileSystem from 'expo-file-system'
+import * as SQLite from 'expo-sqlite'
 import { supabase } from '@/lib/supabase/client'
 import { getDatabase } from '@/lib/db/schema'
 

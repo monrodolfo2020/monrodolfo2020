@@ -217,7 +217,7 @@ function calcSecurityCompliance(security: SecurityScanData): {
 // ─── Main Engine ──────────────────────────────────────────────────────────────
 
 export function calculateScore(input: ScoringInput): ScoringResult {
-  const config = { ...DEFAULT_SCORING_CONFIG, ...input.config }
+  const config: ScoringConfig = { ...DEFAULT_SCORING_CONFIG, ...input.config } as ScoringConfig
   const now = input.now ?? new Date()
 
   const completion = calcMaintenanceCompletion(input.tasks)

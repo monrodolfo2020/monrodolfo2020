@@ -7,7 +7,7 @@ interface SyncState {
   progress: string | null
   lastSyncedAt: Date | null
   pendingUploads: number
-  setStatus: (status: SyncStatus, progress?: string) => void
+  setStatus: (status: SyncStatus, progress?: string | null) => void
   setLastSyncedAt: (date: Date) => void
   setPendingUploads: (count: number) => void
 }

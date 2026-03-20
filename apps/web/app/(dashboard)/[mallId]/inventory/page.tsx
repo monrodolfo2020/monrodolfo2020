@@ -24,7 +24,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default async function InventoryPage({ params, searchParams }: PageProps) {
   const { mallId } = await params
-  const { category, low_stock } = await searchParams
+  const { category } = await searchParams
   const supabase = await createClient()
 
   const { data: mall } = await supabase
@@ -44,15 +44,8 @@ export default async function InventoryPage({ params, searchParams }: PageProps)
     .order('name')
 
   if (category) query = query.eq('category', category)
-  if (low_stock === '1') query = query.lte('current_stock', supabase.rpc)
 
-  const { data: items } = await supabase
-    .from('inventory_items')
-    .select('*')
-    .eq('mall_id', mallId)
-    .eq('is_active', true)
-    .order('category')
-    .order('name')
+  const { data: items } = await query
 
   const lowStockItems = (items ?? []).filter((item) => item.current_stock <= item.minimum_stock)
 
