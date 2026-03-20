@@ -18,3 +18,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE
 -- NOTE: security_checkpoints is NOT added to realtime because QR secrets
 -- should not be broadcast to all connected clients. The mobile app fetches
 -- checkpoints during sync_pull instead.
+-- Deployment triggered 2026-03-20T01:07:01Z
