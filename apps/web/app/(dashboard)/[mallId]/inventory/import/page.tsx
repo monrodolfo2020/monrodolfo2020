@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -63,11 +63,17 @@ export default function InventoryImportPage() {
   const mallId = params['mallId'] as string
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [userId, setUserId] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [status, setStatus] = useState<UploadStatus>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+  }, [])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null
@@ -106,6 +112,7 @@ export default function InventoryImportPage() {
           original_filename: file.name,
           status: 'pending',
           total_rows: validation.rowCount,
+          imported_by: userId,
         })
         .select('id')
         .single()
