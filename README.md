@@ -110,33 +110,54 @@ pnpm --filter @mall/mobile start
 
 ## Supabase — Proyecto en Producción
 
-### Crear proyecto
+> **Proyecto configurado:** `xjyulrkarhuybgcgsdcp`
+> URL: `https://xjyulrkarhuybgcgsdcp.supabase.co`
 
-1. Ir a [supabase.com/dashboard](https://supabase.com/dashboard) → New Project
-2. Guardar la URL, anon key y service role key
-
-### Aplicar migraciones
+### Opción A: Script automático (recomendado)
 
 ```bash
-supabase link --project-ref <project-ref>
-supabase db push
+bash scripts/setup-supabase.sh
 ```
 
-### Edge Functions — Deploy
+El script pide tu **Personal Access Token** (PAT) y hace todo en orden:
+vincula el proyecto, aplica las 7 migraciones, despliega las 5 Edge Functions y configura los secrets.
+
+**Obtener PAT:** [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) → "Generate new token"
+
+### Opción B: GitHub Actions (deploy automático en cada push)
+
+Agrega estos secrets en **GitHub → Settings → Secrets → Actions**:
+
+| Secret | Valor | Dónde obtenerlo |
+|--------|-------|-----------------|
+| `SUPABASE_ACCESS_TOKEN` | `sbp_...` | [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGci...` | Supabase → Settings → API → service_role |
+
+El workflow `.github/workflows/deploy-supabase.yml` se ejecuta automáticamente al hacer push con cambios en `supabase/**`.
+
+### Opción C: Manual paso a paso
 
 ```bash
+# 1. Autenticar CLI (necesita PAT sbp_...)
+export SUPABASE_ACCESS_TOKEN=sbp_...
+
+# 2. Vincular proyecto
+supabase link --project-ref xjyulrkarhuybgcgsdcp
+
+# 3. Aplicar migraciones
+supabase db push
+
+# 4. Desplegar Edge Functions
 supabase functions deploy generate-qr
 supabase functions deploy verify-scan
 supabase functions deploy generate-daily-tasks
 supabase functions deploy calculate-scores
 supabase functions deploy process-csv-import
-```
 
-### Secrets para Edge Functions
-
-```bash
-supabase secrets set APP_SUPABASE_URL=https://<project-ref>.supabase.co
-supabase secrets set APP_SERVICE_ROLE_KEY=<service-role-key>
+# 5. Configurar secrets
+supabase secrets set \
+  APP_SUPABASE_URL=https://xjyulrkarhuybgcgsdcp.supabase.co \
+  APP_SERVICE_ROLE_KEY=<service-role-key>
 ```
 
 ### Storage — Buckets
