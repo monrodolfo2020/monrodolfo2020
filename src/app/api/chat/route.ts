@@ -8,6 +8,13 @@ import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms)),
+  ])
+}
+
 export async function POST(req: Request) {
   try {
     const { messages, agentId, conversationId, visitorId, isTest } = await req.json()
@@ -30,7 +37,13 @@ export async function POST(req: Request) {
     }
 
     const lastUserMessage = messages[messages.length - 1]?.content || ''
-    const context = await retrieveContext(agentId, lastUserMessage).catch(() => '')
+
+    const context = await withTimeout(
+      retrieveContext(agentId, lastUserMessage).catch(() => ''),
+      8000,
+      ''
+    )
+
     const systemPrompt = buildSystemPrompt(agent, context)
 
     let convId = conversationId
@@ -52,6 +65,9 @@ export async function POST(req: Request) {
       })
     }
 
+    const abortController = new AbortController()
+    const abortTimer = setTimeout(() => abortController.abort(), 50000)
+
     const result = streamText({
       model: openrouter(agent.model_id),
       system: systemPrompt,
@@ -59,7 +75,9 @@ export async function POST(req: Request) {
         role: m.role as 'user' | 'assistant',
         content: m.content,
       })),
+      abortSignal: abortController.signal,
       onFinish: async ({ text }) => {
+        clearTimeout(abortTimer)
         if (convId) {
           await admin.from('messages').insert({
             conversation_id: convId,
@@ -81,7 +99,6 @@ export async function POST(req: Request) {
       },
     })
 
-    // Stream text using async iterator for better error surfacing
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
@@ -92,8 +109,9 @@ export async function POST(req: Request) {
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : 'Error desconocido'
           console.error('Stream error:', msg)
-          controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`))
+          controller.enqueue(encoder.encode(`[Error: ${msg}]`))
         } finally {
+          clearTimeout(abortTimer)
           controller.close()
         }
       },

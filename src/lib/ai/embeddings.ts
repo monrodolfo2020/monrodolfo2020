@@ -37,4 +37,15 @@ export async function storeEmbeddings(
     .from('knowledge_items')
     .update({ status: 'ready', chunk_count: chunks.length })
     .eq('id', knowledgeItemId)
+
+  // Update agent's total_knowledge_items counter
+  const { count } = await supabase
+    .from('knowledge_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('agent_id', agentId)
+    .eq('status', 'ready')
+  await supabase
+    .from('agents')
+    .update({ total_knowledge_items: count ?? 0 })
+    .eq('id', agentId)
 }

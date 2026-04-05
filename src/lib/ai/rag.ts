@@ -1,9 +1,12 @@
 import OpenAI from 'openai'
 import { createAdminClient } from '@/lib/supabase/server'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
 export async function retrieveContext(agentId: string, query: string): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return ''
+
+  const openai = new OpenAI({ apiKey, maxRetries: 0, timeout: 8000 })
+
   const embResponse = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: query,

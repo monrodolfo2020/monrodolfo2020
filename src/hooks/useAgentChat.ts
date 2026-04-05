@@ -13,6 +13,9 @@ interface UseAgentChatOptions {
   isTest?: boolean
 }
 
+const FETCH_TIMEOUT_MS = 35000
+const READ_TIMEOUT_MS = 30000
+
 export function useAgentChat({ agentId, visitorId, isTest }: UseAgentChatOptions) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -31,10 +34,14 @@ export function useAgentChat({ agentId, visitorId, isTest }: UseAgentChatOptions
     const assistantId = crypto.randomUUID()
     setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }])
 
+    const controller = new AbortController()
+    const fetchTimer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           agentId,
           visitorId,
@@ -44,30 +51,52 @@ export function useAgentChat({ agentId, visitorId, isTest }: UseAgentChatOptions
         }),
       })
 
-      if (!res.ok) throw new Error('Error al conectar con el agente')
+      clearTimeout(fetchTimer)
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(errData.error || `Error del servidor (${res.status})`)
+      }
 
       const convId = res.headers.get('X-Conversation-Id')
       if (convId) setConversationId(convId)
 
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
-      if (!reader) throw new Error('No stream')
+      if (!reader) throw new Error('No se pudo leer la respuesta')
 
       let accumulated = ''
+      let readTimer: ReturnType<typeof setTimeout> | null = null
+
+      const resetReadTimer = () => {
+        if (readTimer !== null) clearTimeout(readTimer)
+        readTimer = setTimeout(() => { reader.cancel('read timeout') }, READ_TIMEOUT_MS)
+      }
+
+      resetReadTimer()
       while (true) {
         const { done, value } = await reader.read()
+        if (readTimer !== null) { clearTimeout(readTimer); readTimer = null }
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
         accumulated += chunk
         setMessages(prev => prev.map(m =>
           m.id === assistantId ? { ...m, content: accumulated } : m
         ))
+        resetReadTimer()
+      }
+
+      if (!accumulated) {
+        throw new Error('El modelo no devolvio respuesta. Intenta de nuevo.')
       }
     } catch (err: unknown) {
+      clearTimeout(fetchTimer)
+      const isAbort = err instanceof DOMException && err.name === 'AbortError'
+      const msg = isAbort
+        ? 'Tiempo de espera agotado (35s). El modelo gratuito puede estar lento, intenta de nuevo.'
+        : (err instanceof Error ? err.message : 'Error desconocido')
       setMessages(prev => prev.map(m =>
-        m.id === assistantId
-          ? { ...m, content: 'Lo siento, ocurrió un error. Por favor intenta de nuevo.' }
-          : m
+        m.id === assistantId ? { ...m, content: `[!] ${msg}` } : m
       ))
     } finally {
       setIsLoading(false)
