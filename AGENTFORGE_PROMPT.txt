@@ -1,0 +1,932 @@
+================================================================================
+SUPER PROMPT PARA CLAUDE CODE DESKTOP
+PROYECTO: AgentForge - Plataforma de Agentes IA Personalizados
+FECHA: Abril 2026
+================================================================================
+
+Lee COMPLETAMENTE este prompt antes de escribir una sola línea de código.
+Este es el documento maestro para construir AgentForge de principio a fin.
+
+================================================================================
+SECCION 1: VISION GENERAL
+================================================================================
+
+AgentForge es una plataforma web que permite a personas SIN conocimientos técnicos
+crear agentes de inteligencia artificial que representen su experiencia y habilidades
+profesionales. Un agente aprende del conocimiento que el usuario le da (documentos,
+audios, videos, páginas web) y luego puede ser compartido con empresas mediante un
+link único.
+
+CASO DE USO EJEMPLO:
+Un consultor de supply chain que perdió su trabajo entra a AgentForge, crea su
+agente "Juan Consultor SCM", lo entrena con sus presentaciones, papers y grabaciones
+de su metodología, genera un link y se lo manda a 10 empresas. Cada empresa accede
+al link y puede chatear con su agente las 24 horas, sin que Juan tenga que estar
+presente. Juan puede multiplicar su conocimiento y monetizarlo.
+
+PRINCIPIO DE DISEÑO CENTRAL:
+Todo el lenguaje de la UI debe ser para no-técnicos. Nunca usar: embeddings,
+vectores, RAG, tokens, pgvector, chunking. En su lugar usar: entrenar, conocimiento,
+aprender, procesar, listo.
+
+================================================================================
+SECCION 2: TECH STACK (NO NEGOCIABLE)
+================================================================================
+
+Frontend:   Next.js 14+ con App Router, TypeScript, directorio /src
+UI:         Tailwind CSS + shadcn/ui (estilo New York, color base Zinc)
+Auth:       Supabase Auth (email/contraseña + OAuth Google)
+Base datos: Supabase PostgreSQL con extensión pgvector
+Storage:    Supabase Storage (archivos y avatares)
+LLM:        OpenRouter API (compatible con OpenAI, baseURL: https://openrouter.ai/api/v1)
+AI SDK:     Vercel AI SDK v3 (streamText para respuestas en streaming)
+Embeddings: OpenAI text-embedding-3-small (SOLO para embeddings y Whisper)
+Tokens:     nanoid para tokens de compartir
+Validación: Zod para validación de inputs en API routes
+Scraping:   Cheerio + fetch nativo
+Deploy:     Vercel
+
+
+================================================================================
+SECCION 3: VARIABLES DE ENTORNO
+================================================================================
+
+Crea el archivo .env.local con estas variables (el usuario las llenará):
+
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+OPENROUTER_API_KEY=sk-or-...
+OPENAI_API_KEY=sk-...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+Crea también un archivo .env.example con los mismos nombres pero sin valores.
+Agrega .env.local a .gitignore.
+
+================================================================================
+SECCION 4: ESTRUCTURA DE CARPETAS
+================================================================================
+
+Crea el proyecto nuevo en una carpeta llamada agentforge con esta estructura:
+
+agentforge/
+├── .env.local                   (NO commitear)
+├── .env.example
+├── next.config.ts
+├── tailwind.config.ts
+├── components.json              (shadcn config)
+├── supabase/
+│   └── migrations/
+│       ├── 001_schema.sql
+│       ├── 002_rls.sql
+│       ├── 003_storage.sql
+│       └── 004_functions.sql
+└── src/
+    ├── app/
+    │   ├── layout.tsx
+    │   ├── page.tsx             (Landing page en español)
+    │   ├── globals.css
+    │   ├── (auth)/
+    │   │   ├── login/page.tsx
+    │   │   ├── register/page.tsx
+    │   │   └── callback/route.ts
+    │   ├── (dashboard)/
+    │   │   ├── layout.tsx       (Sidebar + TopBar)
+    │   │   ├── dashboard/page.tsx
+    │   │   └── agents/
+    │   │       ├── new/page.tsx
+    │   │       └── [agentId]/
+    │   │           ├── page.tsx
+    │   │           ├── knowledge/page.tsx
+    │   │           ├── test/page.tsx
+    │   │           └── publish/page.tsx
+    │   ├── share/
+    │   │   └── [token]/page.tsx (Pública, sin auth)
+    │   └── api/
+    │       ├── agents/
+    │       │   ├── route.ts
+    │       │   └── [agentId]/
+    │       │       ├── route.ts
+    │       │       └── publish/route.ts
+    │       ├── knowledge/
+    │       │   ├── upload/route.ts
+    │       │   ├── audio/route.ts
+    │       │   ├── youtube/route.ts
+    │       │   ├── url/route.ts
+    │       │   ├── text/route.ts
+    │       │   └── [itemId]/route.ts
+    │       └── chat/
+    │           └── route.ts
+    ├── components/
+    │   ├── ui/                  (shadcn/ui - auto-generados)
+    │   ├── auth/
+    │   │   ├── LoginForm.tsx
+    │   │   └── RegisterForm.tsx
+    │   ├── layout/
+    │   │   ├── Sidebar.tsx
+    │   │   └── TopBar.tsx
+    │   ├── agents/
+    │   │   ├── AgentCard.tsx
+    │   │   └── AgentWizard/
+    │   │       ├── index.tsx
+    │   │       ├── Step1BasicInfo.tsx
+    │   │       ├── Step2Personality.tsx
+    │   │       └── Step3ModelSelect.tsx
+    │   ├── knowledge/
+    │   │   ├── KnowledgeUploader.tsx
+    │   │   ├── KnowledgeList.tsx
+    │   │   ├── YoutubeInput.tsx
+    │   │   └── UrlInput.tsx
+    │   └── chat/
+    │       ├── ChatInterface.tsx
+    │       └── ChatMessage.tsx
+    ├── lib/
+    │   ├── supabase/
+    │   │   ├── client.ts
+    │   │   └── server.ts
+    │   ├── ai/
+    │   │   ├── embeddings.ts
+    │   │   ├── rag.ts
+    │   │   ├── openrouter.ts
+    │   │   └── prompts.ts
+    │   ├── ingestion/
+    │   │   ├── pdf.ts
+    │   │   ├── docx.ts
+    │   │   ├── audio.ts
+    │   │   ├── youtube.ts
+    │   │   ├── scraper.ts
+    │   │   └── chunker.ts
+    │   └── utils.ts
+    ├── hooks/
+    │   ├── useAgent.ts
+    │   ├── useKnowledge.ts
+    │   └── useAuth.ts
+    └── types/
+        ├── database.ts
+        └── agent.ts
+
+
+================================================================================
+SECCION 5: BASE DE DATOS SUPABASE (CORRER EN ORDEN)
+================================================================================
+
+--- ARCHIVO: supabase/migrations/001_schema.sql ---
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+-- TABLA: agents
+CREATE TABLE agents (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id          UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name             TEXT NOT NULL,
+  description      TEXT,
+  avatar_url       TEXT,
+  tone             TEXT NOT NULL DEFAULT 'professional',
+  system_prompt    TEXT,
+  model_id         TEXT NOT NULL DEFAULT 'qwen/qwen-2.5-7b-instruct:free',
+  is_published     BOOLEAN NOT NULL DEFAULT FALSE,
+  share_token      TEXT UNIQUE,
+  total_conversations  INTEGER NOT NULL DEFAULT 0,
+  total_messages       INTEGER NOT NULL DEFAULT 0,
+  total_knowledge_items INTEGER NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- TABLA: knowledge_items
+CREATE TABLE knowledge_items (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  agent_id     UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  source_type  TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  source_url   TEXT,
+  storage_path TEXT,
+  raw_text     TEXT,
+  status       TEXT NOT NULL DEFAULT 'processing',
+  error_message TEXT,
+  chunk_count  INTEGER NOT NULL DEFAULT 0,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- TABLA: embeddings (núcleo del RAG)
+CREATE TABLE embeddings (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  knowledge_item_id UUID NOT NULL REFERENCES knowledge_items(id) ON DELETE CASCADE,
+  agent_id          UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  chunk_index       INTEGER NOT NULL,
+  chunk_text        TEXT NOT NULL,
+  embedding         VECTOR(1536) NOT NULL,
+  token_count       INTEGER,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_agents_user_id ON agents(user_id);
+CREATE INDEX idx_knowledge_agent_id ON knowledge_items(agent_id);
+CREATE INDEX idx_embeddings_agent_id ON embeddings(agent_id);
+CREATE INDEX idx_embeddings_vector ON embeddings
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);
+
+-- TABLA: conversations
+CREATE TABLE conversations (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  agent_id      UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  visitor_id    TEXT,
+  user_id       UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  is_test       BOOLEAN NOT NULL DEFAULT FALSE,
+  message_count INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_active   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- TABLA: messages
+CREATE TABLE messages (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  agent_id        UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  role            TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content         TEXT NOT NULL,
+  chunks_used     JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_conversations_agent_id ON conversations(agent_id);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+
+--- ARCHIVO: supabase/migrations/002_rls.sql ---
+
+ALTER TABLE agents          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE knowledge_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE embeddings      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversations   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages        ENABLE ROW LEVEL SECURITY;
+
+-- agents: dueño tiene acceso total, agentes publicados son públicos de lectura
+CREATE POLICY "agents_owner_all" ON agents
+  FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "agents_public_read" ON agents
+  FOR SELECT USING (is_published = TRUE);
+
+-- knowledge_items y embeddings: solo el dueño
+CREATE POLICY "knowledge_owner_all" ON knowledge_items
+  FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "embeddings_owner_read" ON embeddings
+  FOR SELECT USING (
+    agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
+  );
+
+-- conversations: cualquiera puede crear, dueño puede leer todas
+CREATE POLICY "conversations_public_insert" ON conversations
+  FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "conversations_owner_read" ON conversations
+  FOR SELECT USING (
+    agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
+  );
+
+-- messages: cualquiera puede crear, dueño puede leer
+CREATE POLICY "messages_public_insert" ON messages
+  FOR INSERT WITH CHECK (TRUE);
+CREATE POLICY "messages_owner_read" ON messages
+  FOR SELECT USING (
+    agent_id IN (SELECT id FROM agents WHERE user_id = auth.uid())
+  );
+
+--- ARCHIVO: supabase/migrations/003_storage.sql ---
+-- Ejecutar en el Dashboard de Supabase > Storage > Create bucket:
+-- Bucket 1: "avatars"      -> Público, 2MB max, tipos: image/jpeg, image/png, image/webp
+-- Bucket 2: "knowledge-files" -> Privado, 50MB max, tipos: pdf, docx, pptx, mp3, wav, mp4
+
+-- RLS para knowledge-files: solo el dueño puede subir/leer
+CREATE POLICY "knowledge_files_owner"
+  ON storage.objects FOR ALL
+  USING (
+    bucket_id = 'knowledge-files'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+--- ARCHIVO: supabase/migrations/004_functions.sql ---
+
+-- Función para búsqueda vectorial (SECURITY DEFINER permite acceso desde la página pública)
+CREATE OR REPLACE FUNCTION match_embeddings(
+  query_embedding  VECTOR(1536),
+  match_agent_id   UUID,
+  match_count      INT DEFAULT 5,
+  match_threshold  FLOAT DEFAULT 0.7
+)
+RETURNS TABLE (
+  chunk_text        TEXT,
+  similarity        FLOAT,
+  knowledge_item_id UUID,
+  chunk_index       INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM agents
+    WHERE id = match_agent_id
+    AND (is_published = TRUE OR user_id = auth.uid())
+  ) THEN
+    RAISE EXCEPTION 'Agente no accesible';
+  END IF;
+  RETURN QUERY
+  SELECT
+    e.chunk_text,
+    1 - (e.embedding <=> query_embedding) AS similarity,
+    e.knowledge_item_id,
+    e.chunk_index
+  FROM embeddings e
+  WHERE e.agent_id = match_agent_id
+    AND 1 - (e.embedding <=> query_embedding) > match_threshold
+  ORDER BY e.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+-- Trigger para actualizar updated_at automáticamente
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+$$;
+CREATE TRIGGER agents_updated_at
+  BEFORE UPDATE ON agents
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+
+================================================================================
+SECCION 6: DEPENDENCIAS (package.json)
+================================================================================
+
+Inicializa el proyecto con:
+  npx create-next-app@latest agentforge --typescript --tailwind --app --src-dir --import-alias "@/*"
+
+Luego instala shadcn/ui:
+  npx shadcn@latest init
+  (Elegir: New York style, Zinc base color, yes to CSS variables)
+
+Agrega los componentes de shadcn:
+  npx shadcn@latest add button card dialog input progress tabs badge avatar textarea select toast separator sheet
+
+Instala las dependencias adicionales:
+  npm install @supabase/supabase-js @supabase/ssr
+  npm install ai @ai-sdk/openai openai
+  npm install pdf-parse mammoth pptx2json cheerio youtube-transcript
+  npm install nanoid zod
+  npm install react-markdown lucide-react
+  npm install @vercel/functions
+  npm install --save-dev @types/pdf-parse @types/cheerio
+
+================================================================================
+SECCION 7: ARCHIVOS CLAVE - IMPLEMENTACION COMPLETA
+================================================================================
+
+--- src/lib/supabase/client.ts ---
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+--- src/lib/supabase/server.ts ---
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options))
+          } catch {}
+        },
+      },
+    }
+  )
+}
+
+export async function createAdminClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options))
+          } catch {}
+        },
+      },
+    }
+  )
+}
+
+--- src/middleware.ts ---
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options))
+        },
+      },
+    }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard') ||
+                      request.nextUrl.pathname.startsWith('/agents')
+  if (isDashboard && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|share).*)'],
+}
+
+--- src/lib/ai/openrouter.ts ---
+import { createOpenAI } from '@ai-sdk/openai'
+
+export const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  headers: {
+    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    'X-Title': 'AgentForge',
+  }
+})
+
+--- src/lib/ai/embeddings.ts ---
+import OpenAI from 'openai'
+import { createAdminClient } from '@/lib/supabase/server'
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  const response = await openai.embeddings.create({
+    model: 'text-embedding-3-small',
+    input: texts,
+  })
+  return response.data.map(d => d.embedding)
+}
+
+export async function storeEmbeddings(
+  agentId: string,
+  knowledgeItemId: string,
+  chunks: string[]
+) {
+  const supabase = await createAdminClient()
+  const BATCH_SIZE = 100
+
+  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+    const batch = chunks.slice(i, i + BATCH_SIZE)
+    const embeddings = await generateEmbeddings(batch)
+    const rows = batch.map((chunk, j) => ({
+      agent_id: agentId,
+      knowledge_item_id: knowledgeItemId,
+      chunk_index: i + j,
+      chunk_text: chunk,
+      embedding: JSON.stringify(embeddings[j]),
+    }))
+    await supabase.from('embeddings').insert(rows)
+  }
+
+  await supabase
+    .from('knowledge_items')
+    .update({ status: 'ready', chunk_count: chunks.length })
+    .eq('id', knowledgeItemId)
+}
+
+--- src/lib/ai/rag.ts ---
+import OpenAI from 'openai'
+import { createAdminClient } from '@/lib/supabase/server'
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+export async function retrieveContext(agentId: string, query: string): Promise<string> {
+  const [{ data: embeddingData }] = await Promise.all([
+    openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: query,
+    }).then(r => ({ data: r.data[0].embedding }))
+  ])
+
+  const supabase = await createAdminClient()
+  const { data: chunks, error } = await supabase.rpc('match_embeddings', {
+    query_embedding: embeddingData,
+    match_agent_id: agentId,
+    match_count: 5,
+    match_threshold: 0.65,
+  })
+
+  if (error || !chunks || chunks.length === 0) return ''
+
+  return chunks.map((c: any, i: number) =>
+    `[Conocimiento ${i + 1}]:\n${c.chunk_text}`
+  ).join('\n\n---\n\n')
+}
+
+--- src/lib/ai/prompts.ts ---
+export function buildSystemPrompt(agent: {
+  name: string
+  description: string | null
+  tone: string
+  system_prompt: string | null
+}, context: string): string {
+  const toneMap: Record<string, string> = {
+    professional: 'Eres profesional, preciso y orientado a resultados.',
+    friendly: 'Eres amigable, cercano y accesible.',
+    formal: 'Eres formal y riguroso en tus respuestas.',
+    casual: 'Eres casual y conversacional, usas lenguaje cotidiano.',
+    enthusiastic: 'Eres entusiasta, motivador y energético.',
+  }
+
+  const base = agent.system_prompt ||
+    `Eres ${agent.name}, un agente de IA especializado.
+${agent.description ? `Sobre ti: ${agent.description}` : ''}
+${toneMap[agent.tone] || toneMap.professional}
+Responde ÚNICAMENTE basándote en el conocimiento proporcionado.
+Si no tienes información sobre algo, dilo honestamente.
+No inventes información que no esté en tu base de conocimiento.`
+
+  if (!context) return base
+  return `${base}\n\n---\nCONOCIMIENTO RELEVANTE:\n${context}`
+}
+
+--- src/lib/ingestion/chunker.ts ---
+export function chunkText(text: string, chunkSize = 512, overlap = 50): string[] {
+  const words = text.split(/\s+/).filter(w => w.length > 0)
+  const chunks: string[] = []
+  let start = 0
+
+  while (start < words.length) {
+    const end = Math.min(start + chunkSize, words.length)
+    chunks.push(words.slice(start, end).join(' '))
+    if (end >= words.length) break
+    start = end - overlap
+  }
+
+  return chunks.filter(c => c.trim().length > 20)
+}
+
+
+================================================================================
+SECCION 8: API ROUTES PRINCIPALES
+================================================================================
+
+--- src/app/api/chat/route.ts ---
+Este es el endpoint más importante. Usa el siguiente patrón:
+
+import { streamText } from 'ai'
+import { openrouter } from '@/lib/ai/openrouter'
+import { retrieveContext } from '@/lib/ai/rag'
+import { buildSystemPrompt } from '@/lib/ai/prompts'
+import { createAdminClient } from '@/lib/supabase/server'
+
+export const runtime = 'nodejs'
+
+export async function POST(req: Request) {
+  const { messages, agentId, conversationId, visitorId } = await req.json()
+
+  const supabase = await createAdminClient()
+
+  // 1. Cargar configuración del agente
+  const { data: agent } = await supabase
+    .from('agents')
+    .select('*')
+    .eq('id', agentId)
+    .single()
+
+  if (!agent || (!agent.is_published && /* verificar que es el dueño */ false)) {
+    return new Response('Agente no encontrado', { status: 404 })
+  }
+
+  // 2. Obtener contexto relevante via RAG
+  const lastUserMessage = messages[messages.length - 1].content
+  const context = await retrieveContext(agentId, lastUserMessage)
+
+  // 3. Construir system prompt con contexto
+  const systemPrompt = buildSystemPrompt(agent, context)
+
+  // 4. Crear o recuperar conversación
+  let convId = conversationId
+  if (!convId) {
+    const { data: conv } = await supabase
+      .from('conversations')
+      .insert({ agent_id: agentId, visitor_id: visitorId })
+      .select('id')
+      .single()
+    convId = conv?.id
+  }
+
+  // 5. Guardar mensaje del usuario
+  await supabase.from('messages').insert({
+    conversation_id: convId,
+    agent_id: agentId,
+    role: 'user',
+    content: lastUserMessage,
+  })
+
+  // 6. Stream respuesta del LLM via OpenRouter
+  const result = streamText({
+    model: openrouter(agent.model_id),
+    system: systemPrompt,
+    messages: messages.slice(-10), // últimos 10 mensajes
+    onFinish: async ({ text }) => {
+      // Guardar respuesta del agente
+      await supabase.from('messages').insert({
+        conversation_id: convId,
+        agent_id: agentId,
+        role: 'assistant',
+        content: text,
+      })
+      // Actualizar contadores
+      await supabase.rpc('increment_agent_stats', {
+        p_agent_id: agentId,
+        p_messages: 2,
+      })
+    },
+  })
+
+  return result.toDataStreamResponse()
+}
+
+--- src/app/api/knowledge/upload/route.ts ---
+Patrón para todos los tipos de ingesta:
+
+1. Recibir archivo/URL/texto
+2. Crear registro en knowledge_items con status='processing'
+3. Devolver 202 Accepted inmediatamente con el ID del item
+4. Procesar en background usando waitUntil() de @vercel/functions:
+   a. Extraer texto crudo (pdf-parse, mammoth, etc.)
+   b. Dividir en chunks con chunker.ts
+   c. Generar embeddings y guardar con storeEmbeddings()
+   d. Actualizar status a 'ready' o 'error'
+5. El frontend hace polling a GET /api/knowledge/[itemId] cada 3 segundos
+
+EXTRACTORES POR TIPO:
+- PDF:     import pdfParse from 'pdf-parse'; const { text } = await pdfParse(buffer)
+- DOCX:    import mammoth from 'mammoth'; const { value } = await mammoth.extractRawText({ buffer })
+- Audio:   const transcript = await openai.audio.transcriptions.create({ model: 'whisper-1', file })
+- YouTube: import { YoutubeTranscript } from 'youtube-transcript'; const segs = await YoutubeTranscript.fetchTranscript(videoId); text = segs.map(s => s.text).join(' ')
+- URL:     const html = await fetch(url).then(r => r.text()); const $ = load(html); $('script,style,nav,footer').remove(); text = $('body').text()
+- Texto:   usar directamente el texto recibido
+
+--- src/app/api/agents/[agentId]/publish/route.ts ---
+import { nanoid } from 'nanoid'
+import { createAdminClient } from '@/lib/supabase/server'
+
+export async function POST(req: Request, { params }: { params: { agentId: string } }) {
+  const supabase = await createAdminClient()
+  const shareToken = nanoid(12)
+
+  const { data } = await supabase
+    .from('agents')
+    .update({ is_published: true, share_token: shareToken })
+    .eq('id', params.agentId)
+    .select('share_token')
+    .single()
+
+  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/share/${data?.share_token}`
+  return Response.json({ shareUrl, shareToken: data?.share_token })
+}
+
+================================================================================
+SECCION 9: PAGINAS PRINCIPALES (UI)
+================================================================================
+
+--- src/app/share/[token]/page.tsx ---
+Esta página es pública (sin auth). Implementa:
+1. Buscar agente por share_token WHERE is_published=TRUE
+2. Si no existe → notFound()
+3. Si existe → renderizar ChatInterface con el agente
+4. Generar visitorId con crypto.randomUUID() y guardarlo en localStorage
+5. No mostrar información técnica del agente (modelo, ID, etc.)
+6. Mostrar: nombre, descripción, avatar del agente
+
+--- src/app/(dashboard)/agents/new/page.tsx ---
+Wizard de 3 pasos con barra de progreso visible:
+PASO 1 - Identidad:
+  - Nombre del agente (requerido, máx 60 chars)
+  - Descripción corta (opcional, máx 200 chars, se mostrará en la página pública)
+  - Foto/avatar (selector de 8 avatares predefinidos o subida propia)
+
+PASO 2 - Personalidad:
+  - Selector de tono (tarjetas con icono): Profesional / Amigable / Formal / Casual / Experto
+  - Vista previa del system prompt generado automáticamente
+  - Botón "Personalizar" para editar el system prompt manualmente
+
+PASO 3 - Modelo de IA:
+  - Tarjeta "Gratuito - Qwen 7B" (qwen/qwen-2.5-7b-instruct:free) - RECOMENDADO
+  - Tarjeta "Estándar - Calidad mejorada" (qwen/qwen-2.5-72b-instruct)
+  - Tarjeta "Premium - Mejor calidad" (google/gemini-2.0-flash-001)
+  - Mostrar costo estimado en lenguaje sencillo (no en tokens)
+
+--- src/app/(dashboard)/agents/[agentId]/knowledge/page.tsx ---
+Interfaz de entrenamiento con pestañas:
+PESTAÑA 1 - Documentos: zona drag-and-drop, acepta PDF/DOCX/PPTX
+PESTAÑA 2 - Audio: subir MP3/WAV (se transcribe automáticamente)
+PESTAÑA 3 - YouTube: campo para pegar URL de video
+PESTAÑA 4 - Página web: campo para pegar URL
+PESTAÑA 5 - Texto: textarea libre para pegar conocimiento directamente
+
+Debajo de las pestañas: lista de todos los elementos de conocimiento con:
+- Icono por tipo (documento, audio, video, web, texto)
+- Título y fecha
+- Badge de estado: "Procesando..." / "Listo" / "Error"
+- Botón de eliminar (con confirmación)
+
+LENGUAJE DE LA UI:
+- "Entrenar" en lugar de "procesar"
+- "Conocimiento" en lugar de "embeddings"
+- "Procesando tu conocimiento..." en lugar de "Generando embeddings..."
+- "¡Listo! Tu agente aprendió esto." en lugar de "Embeddings generados"
+
+================================================================================
+SECCION 10: MODELOS DE IA DISPONIBLES
+================================================================================
+
+Configurar en Step3ModelSelect.tsx con estos modelos de OpenRouter:
+
+OPCION 1 - Gratuito (recomendado para empezar):
+  model_id: "qwen/qwen-2.5-7b-instruct:free"
+  Nombre en UI: "Básico - Sin costo"
+  Descripción: "Perfecto para empezar. Respuestas de buena calidad sin ningún costo."
+
+OPCION 2 - Estándar:
+  model_id: "qwen/qwen-2.5-72b-instruct"
+  Nombre en UI: "Estándar - ~$0.30 por 1,000 respuestas"
+  Descripción: "Mejor comprensión de preguntas complejas. Ideal para uso profesional."
+
+OPCION 3 - Premium:
+  model_id: "google/gemini-2.0-flash-001"
+  Nombre en UI: "Premium - ~$0.50 por 1,000 respuestas"
+  Descripción: "La mejor calidad disponible. Excelente para consultores y expertos."
+
+NOTA IMPORTANTE: Los costos son del proveedor de IA, no de AgentForge.
+El sistema de pagos de AgentForge se implementará en una fase posterior con Stripe.
+
+================================================================================
+SECCION 11: FASES DE IMPLEMENTACION (ORDEN ESTRICTO)
+================================================================================
+
+FASE 1 - Bootstrap y Auth (Día 1-2):
+[ ] npx create-next-app@latest agentforge con TypeScript + Tailwind + App Router
+[ ] Instalar shadcn/ui (New York, Zinc)
+[ ] Instalar todas las dependencias listadas en Sección 6
+[ ] Crear src/lib/supabase/client.ts y server.ts
+[ ] Crear src/middleware.ts con protección de rutas del dashboard
+[ ] Crear páginas de login y registro con Supabase Auth
+[ ] Crear /auth/callback/route.ts para OAuth
+[ ] Configurar en Supabase Dashboard: Email auth + Google OAuth
+[ ] Probar: registro, login, logout, redirect a dashboard
+
+FASE 2 - Wizard de Creación de Agentes (Día 3-4):
+[ ] Crear AgentWizard con 3 pasos
+[ ] POST /api/agents para crear agente en DB
+[ ] Página de dashboard con lista de AgentCards
+[ ] GET /api/agents para listar agentes del usuario
+
+FASE 3 - Pipeline de Conocimiento (Día 5-7):
+[ ] src/lib/ingestion/chunker.ts
+[ ] src/lib/ai/embeddings.ts (storeEmbeddings)
+[ ] POST /api/knowledge/upload (PDF, DOCX)
+[ ] POST /api/knowledge/audio (Whisper)
+[ ] POST /api/knowledge/youtube
+[ ] POST /api/knowledge/url (Cheerio)
+[ ] POST /api/knowledge/text
+[ ] UI de KnowledgeUploader con pestañas
+[ ] Polling de estado cada 3 segundos
+
+FASE 4 - Chat RAG (Día 8-9):
+[ ] src/lib/ai/rag.ts (retrieveContext)
+[ ] src/lib/ai/prompts.ts (buildSystemPrompt)
+[ ] POST /api/chat (streaming con Vercel AI SDK)
+[ ] ChatInterface.tsx reutilizable
+[ ] Página /agents/[id]/test para probar el agente
+
+FASE 5 - Publicación y Link Compartible (Día 10):
+[ ] POST /api/agents/[agentId]/publish (genera share_token)
+[ ] Página /share/[token] (pública, sin auth)
+[ ] UI de publicación con botón de copiar link
+[ ] Toggle para publicar/despublicar
+
+FASE 6 - Dashboard y Estadísticas (Día 11):
+[ ] Cards de estadísticas en el dashboard
+[ ] Vista de conversaciones por agente
+
+FASE 7 - Polish y Placeholder de Pagos (Día 12):
+[ ] Landing page en español (/page.tsx)
+[ ] Manejo global de errores y toasts
+[ ] Skeletons de carga
+[ ] Página de configuración con sección "Pagos - Próximamente"
+[ ] Rate limiting básico en /api/chat
+
+================================================================================
+SECCION 12: CONFIGURACION DE SUPABASE (CHECKLIST)
+================================================================================
+
+En el Dashboard de Supabase (supabase.com):
+[ ] 1. Crear nuevo proyecto
+[ ] 2. Authentication > Providers > Email: Activar, con "Confirm email" ON
+[ ] 3. Authentication > Providers > Google: Activar con credenciales OAuth de Google Cloud
+[ ] 4. Authentication > URL Configuration:
+        Site URL: http://localhost:3000 (cambiar en producción)
+        Redirect URLs: http://localhost:3000/auth/callback
+[ ] 5. Database > Extensions: Activar "vector" (pgvector)
+[ ] 6. SQL Editor: Ejecutar migrations 001, 002, 004 en orden
+[ ] 7. Storage > Buckets: Crear "avatars" (público) y "knowledge-files" (privado)
+[ ] 8. SQL Editor: Ejecutar migration 003 (storage policies)
+[ ] 9. Project Settings > API: Copiar URL y anon key a .env.local
+[ ] 10. Project Settings > API: Copiar service_role key a .env.local
+[ ] 11. Generar tipos TypeScript:
+         npx supabase gen types typescript --project-id TU_PROJECT_ID > src/types/database.ts
+
+================================================================================
+SECCION 13: DESPLIEGUE EN VERCEL
+================================================================================
+
+[ ] 1. Push del código a GitHub (nuevo repositorio: agentforge)
+[ ] 2. Importar proyecto en vercel.com
+[ ] 3. Framework Preset: Next.js (auto-detectado)
+[ ] 4. Agregar todas las variables de entorno de .env.local en Vercel
+[ ] 5. Cambiar NEXT_PUBLIC_APP_URL al dominio de Vercel
+[ ] 6. Actualizar en Supabase: Site URL y Redirect URL al dominio de Vercel
+[ ] 7. Actualizar en Google Cloud Console: URIs de redirección autorizados
+[ ] 8. Deploy → verificar que /login funciona
+[ ] 9. Crear agente de prueba y verificar /share/[token]
+
+================================================================================
+SECCION 14: NOTAS PARA CLAUDE CODE DESKTOP
+================================================================================
+
+IMPORTANTE - Lee esto antes de empezar:
+
+1. SIEMPRE escribe el código completo y funcional, nunca placeholders como
+   "// implementar aquí" o "// TODO".
+
+2. IDIOMA DE LA UI: Todo el texto visible al usuario debe estar en ESPAÑOL.
+   Botones, mensajes de error, labels, tooltips, todo en español.
+   El código (variables, funciones, comentarios técnicos) puede ser en inglés.
+
+3. NUNCA uses jerga técnica de IA en la UI:
+   MAL: "Generando embeddings...", "Vectorizando documento", "RAG pipeline"
+   BIEN: "Analizando tu documento...", "Procesando conocimiento...", "¡Listo!"
+
+4. La app debe verse PROFESIONAL y SENCILLA. Usar los componentes de shadcn/ui
+   correctamente, con espaciado generoso y tipografía clara.
+
+5. Implementar en el ORDEN de las fases. No saltar fases.
+
+6. Usar SIEMPRE el Service Role client (createAdminClient) en las API Routes
+   para operaciones de escritura en la DB. Usar el cliente normal (createClient)
+   en componentes del lado del cliente.
+
+7. El archivo /src/app/share/[token]/page.tsx debe funcionar SIN autenticación.
+   No importes ni uses auth en esa página.
+
+8. Para el streaming de chat, usar SIEMPRE:
+   result.toDataStreamResponse() en el server
+   useChat() de 'ai/react' en el cliente
+
+9. Todos los uploads de archivos van a Supabase Storage en el path:
+   {user_id}/{agent_id}/{filename}
+
+10. Al terminar cada fase, prueba que funciona antes de continuar.
+
+================================================================================
+FIN DEL SUPER PROMPT - AGENTFORGE
+================================================================================
+
+Repositorio recomendado: https://github.com/[tu-usuario]/agentforge
+Stack: Next.js 14 + Supabase + OpenRouter + Vercel
+Idioma UI: Español
+Modelo por defecto: qwen/qwen-2.5-7b-instruct:free (GRATUITO)
+Costo estimado de embeddings: $0.01 por 1,000 páginas de documento
+
