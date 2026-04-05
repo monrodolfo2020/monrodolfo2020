@@ -18,7 +18,7 @@ function StatusRow({ name, status }: { name: string; status: ServiceStatus | nul
   if (!status) return (
     <div className="flex items-center justify-between py-3 border-b last:border-0">
       <span className="font-medium text-sm">{name}</span>
-      <span className="text-xs text-muted-foreground">—</span>
+      <span className="text-xs text-muted-foreground">--</span>
     </div>
   )
   return (
@@ -46,7 +46,7 @@ export default function SettingsPage() {
     setError(null)
     try {
       const res = await fetch('/api/health')
-      const data = await res.json()
+      const data = await res.json() as HealthResult
       setResult(data)
     } catch {
       setError('No se pudo conectar con el servidor')
@@ -58,7 +58,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Configuraci\u00f3n</h1>
+        <h1 className="text-2xl font-bold">Configuracion</h1>
         <p className="text-muted-foreground">Administra tu cuenta y preferencias</p>
       </div>
 
@@ -66,7 +66,7 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold">Estado de las conexiones</h2>
-            <p className="text-sm text-muted-foreground">Verifica que todas las APIs est\u00e9n funcionando</p>
+            <p className="text-sm text-muted-foreground">Verifica que todas las APIs esten funcionando</p>
           </div>
           <Button onClick={checkHealth} disabled={loading} variant="outline" size="sm" className="gap-2">
             {loading
@@ -81,24 +81,24 @@ export default function SettingsPage() {
         )}
 
         <div className="divide-y rounded-lg border bg-slate-50/50 px-4">
-          <StatusRow name="Base de datos (Supabase)" status={result?.supabase ?? null} />
-          <StatusRow name="Generaci\u00f3n de texto (OpenRouter)" status={result?.openrouter ?? null} />
-          <StatusRow name="Embeddings (OpenAI)" status={result?.openai ?? null} />
+          <StatusRow name="Base de datos (Supabase)" status={result ? result.supabase : null} />
+          <StatusRow name="Generacion de texto (OpenRouter)" status={result ? result.openrouter : null} />
+          <StatusRow name="Embeddings (OpenAI)" status={result ? result.openai : null} />
         </div>
 
         {result && (
           <p className={`text-xs ${result.supabase.ok && result.openrouter.ok ? 'text-green-600' : 'text-red-600'}`}>
             {result.supabase.ok && result.openrouter.ok
-              ? '\u2713 Sistema listo para usar'
-              : '\u2717 Hay problemas \u2014 el chat puede no funcionar correctamente'}
+              ? 'Sistema listo para usar'
+              : 'Hay problemas - el chat puede no funcionar correctamente'}
           </p>
         )}
       </div>
 
       <div className="rounded-xl border bg-amber-50 p-6 text-center">
-        <h3 className="font-semibold text-lg mb-2">\ud83d\udcb3 Sistema de pagos \u2014 Pr\u00f3ximamente</h3>
+        <h3 className="font-semibold text-lg mb-2">Sistema de pagos - Proximamente</h3>
         <p className="text-sm text-amber-700">
-          Pronto podr\u00e1s suscribirte a planes premium para acceder a m\u00e1s agentes, m\u00e1s conocimiento y modelos de IA avanzados.
+          Pronto podras suscribirte a planes premium para acceder a mas agentes, mas conocimiento y modelos de IA avanzados.
         </p>
       </div>
     </div>
