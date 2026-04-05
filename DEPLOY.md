@@ -1,82 +1,32 @@
-# Guía de Despliegue en Vercel
+# AgentForge — Guía de Despliegue
 
-El código ya está en GitHub: https://github.com/monrodolfo2020/monrodolfo2020/tree/agentforge
+## 1. Supabase — Ejecutar la Migración
 
----
+Ve a: https://supabase.com/dashboard/project/xyanjazchhpwfacmwbgy/sql/new
 
-## Paso 1 — Configurar Supabase
+Copia el contenido de `supabase/MIGRATION_COMPLETE.sql` y haz clic en **Run**.
 
-Antes de desplegar, necesitas tu proyecto Supabase listo.
-
-1. Ve a https://supabase.com y crea un proyecto nuevo
-2. En **Settings → API**, copia:
-   - `Project URL` → tu `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` key → tu `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` key → tu `SUPABASE_SERVICE_ROLE_KEY`
-3. En **SQL Editor**, ejecuta los 3 archivos de migración EN ORDEN:
-   - `supabase/migrations/001_schema.sql`
-   - `supabase/migrations/002_rls.sql`
-   - `supabase/migrations/003_functions.sql`
-4. En **Authentication → Providers**:
-   - Activa **Email**
-   - Activa **Google** (agrega tus credenciales OAuth de Google Cloud)
-5. En **Authentication → URL Configuration**:
-   - Site URL: `https://TU-PROYECTO.vercel.app`
-   - Redirect URLs: `https://TU-PROYECTO.vercel.app/auth/callback`
-
----
-
-## Paso 2 — Desplegar en Vercel
+## 2. Vercel — Importar desde GitHub
 
 1. Ve a https://vercel.com/new
-2. Haz clic en **"Import Git Repository"**
-3. Selecciona el repositorio: **`monrodolfo2020/monrodolfo2020`**
-4. En **"Branch"**, selecciona: **`agentforge`**  
-   *(Esta es la rama con el código de AgentForge)*
-5. Vercel detectará automáticamente que es Next.js
-
----
-
-## Paso 3 — Variables de Entorno en Vercel
-
-En la sección **"Environment Variables"** antes de hacer Deploy, agrega:
+2. Importa el repo: `monrodolfo2020/monrodolfo2020`
+3. Cambia la **Branch** a `agentforge`
+4. Agrega las variables de entorno:
 
 | Variable | Valor |
 |----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxx.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` ⚠️ Secret |
-| `OPENROUTER_API_KEY` | `sk-or-...` |
-| `OPENAI_API_KEY` | `sk-...` |
-| `NEXT_PUBLIC_APP_URL` | `https://TU-PROYECTO.vercel.app` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://xyanjazchhpwfacmwbgy.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Tu anon key de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Tu service role key de Supabase |
+| `OPENROUTER_API_KEY` | Tu clave de openrouter.ai/keys |
+| `OPENAI_API_KEY` | Tu clave de platform.openai.com |
+| `NEXT_PUBLIC_APP_URL` | `https://tu-proyecto.vercel.app` |
 
-### ¿Cómo obtener las API Keys?
+5. Click **Deploy**
 
-- **OpenRouter** (para los modelos de IA): https://openrouter.ai/keys
-  - Gratis para empezar con Qwen 7B
-- **OpenAI** (para embeddings y transcripción de audio): https://platform.openai.com/api-keys
-  - Solo necesitas créditos mínimos (~$5 para empezar)
+## 3. Post-Deploy
 
----
-
-## Paso 4 — Deploy
-
-Haz clic en **"Deploy"** y espera ~2 minutos.
-
-Una vez desplegado:
-1. Copia la URL de Vercel (ej: `https://agentforge-xxx.vercel.app`)
-2. Actualiza la variable `NEXT_PUBLIC_APP_URL` con esa URL
-3. Actualiza la **Site URL** en Supabase con esa URL
-4. Re-despliega (Deployments → Redeploy)
-
----
-
-## Resultado Final
-
-Tu app estará en: `https://agentforge-xxx.vercel.app`
-
-- `/` → Landing page
-- `/register` → Crear cuenta
-- `/login` → Iniciar sesión
-- `/dashboard` → Gestionar agentes
-- `/share/[token]` → Link público de tu agente
+Después del deploy, actualiza en Supabase:
+- **Authentication → URL Configuration**
+  - Site URL: `https://tu-proyecto.vercel.app`
+  - Redirect URLs: `https://tu-proyecto.vercel.app/auth/callback`
