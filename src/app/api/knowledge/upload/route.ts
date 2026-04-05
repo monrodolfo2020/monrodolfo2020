@@ -4,6 +4,7 @@ import { storeEmbeddings } from '@/lib/ai/embeddings'
 import { extractPdfText } from '@/lib/ingestion/pdf'
 import { extractDocxText } from '@/lib/ingestion/docx'
 import { chunkText } from '@/lib/ingestion/chunker'
+import { waitUntil } from '@vercel/functions'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -27,7 +28,6 @@ export async function POST(req: Request) {
 
   const admin = await createAdminClient()
 
-  // Crear registro en DB
   const { data: item, error: insertError } = await admin.from('knowledge_items').insert({
     agent_id: agentId,
     user_id: user.id,
@@ -38,23 +38,24 @@ export async function POST(req: Request) {
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
-  // Procesar en background
   const buffer = Buffer.from(await file.arrayBuffer())
-  
-  // Use waitUntil pattern - process async
-  processDocument(buffer, ext, item!.id, agentId, admin).catch(async (err) => {
-    await admin.from('knowledge_items').update({
-      status: 'error',
-      error_message: err.message,
-    }).eq('id', item!.id)
-  })
+
+  waitUntil(
+    processDocument(buffer, ext, item!.id, agentId, admin).catch(async (err) => {
+      await admin.from('knowledge_items').update({
+        status: 'error',
+        error_message: err.message,
+      }).eq('id', item!.id)
+    })
+  )
 
   return NextResponse.json({ id: item!.id, status: 'processing' }, { status: 202 })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function processDocument(buffer: Buffer, ext: string, itemId: string, agentId: string, admin: any) {
   let chunks: string[]
-  
+
   if (ext === 'pdf') {
     chunks = await extractPdfText(buffer)
   } else if (ext === 'docx') {
@@ -64,9 +65,6 @@ async function processDocument(buffer: Buffer, ext: string, itemId: string, agen
   }
 
   if (chunks.length === 0) throw new Error('No se pudo extraer texto del archivo')
-  
+
   await storeEmbeddings(agentId, itemId, chunks)
-  
-  // Update agent knowledge count
-  await admin.rpc('increment_agent_stats', { p_agent_id: agentId })
 }

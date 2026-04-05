@@ -2,6 +2,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { transcribeAudio } from '@/lib/ingestion/audio'
 import { storeEmbeddings } from '@/lib/ai/embeddings'
+import { waitUntil } from '@vercel/functions'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
   if (!file || !agentId) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
 
   const admin = await createAdminClient()
-  const { data: item, error: itemError } = await admin.from('knowledge_items').insert({
+  const { data: item, error: insertError } = await admin.from('knowledge_items').insert({
     agent_id: agentId,
     user_id: user.id,
     source_type: 'audio',
@@ -25,17 +26,18 @@ export async function POST(req: Request) {
     status: 'processing',
   }).select('id').single()
 
+  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
+
   const buffer = Buffer.from(await file.arrayBuffer())
-  
-  processAudio(buffer, file.name, item!.id, agentId, admin).catch(async (err) => {
-    await admin.from('knowledge_items').update({ status: 'error', error_message: err.message }).eq('id', item!.id)
-  })
+
+  waitUntil(
+    transcribeAudio(buffer, file.name).then(chunks => {
+      if (chunks.length === 0) throw new Error('No se pudo transcribir el audio')
+      return storeEmbeddings(agentId, item!.id, chunks)
+    }).catch(async (err) => {
+      await admin.from('knowledge_items').update({ status: 'error', error_message: err.message }).eq('id', item!.id)
+    })
+  )
 
   return NextResponse.json({ id: item!.id, status: 'processing' }, { status: 202 })
-}
-
-async function processAudio(buffer: Buffer, filename: string, itemId: string, agentId: string, admin: any) {
-  const chunks = await transcribeAudio(buffer, filename)
-  if (chunks.length === 0) throw new Error('No se pudo transcribir el audio')
-  await storeEmbeddings(agentId, itemId, chunks)
 }
