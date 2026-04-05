@@ -4,6 +4,6 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://agentforge.vercel.app"
+    "NEXT_PUBLIC_APP_URL": "https://agentforgez.vercel.app"
   }
 }
