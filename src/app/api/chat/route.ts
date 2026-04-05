@@ -81,7 +81,31 @@ export async function POST(req: Request) {
       },
     })
 
-    return result.toTextStreamResponse()
+    // Stream text using async iterator for better error surfacing
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.textStream) {
+            controller.enqueue(encoder.encode(chunk))
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'Error desconocido'
+          console.error('Stream error:', msg)
+          controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`))
+        } finally {
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store',
+        'X-Accel-Buffering': 'no',
+      },
+    })
   } catch (err: unknown) {
     console.error('Chat error:', err)
     return NextResponse.json({ error: 'Error al procesar el chat' }, { status: 500 })
