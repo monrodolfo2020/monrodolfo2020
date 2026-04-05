@@ -15,7 +15,6 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,30 +33,18 @@ export default function RegisterPage() {
         ? 'Ya existe una cuenta con ese correo. Inicia sesión.'
         : 'Error al crear la cuenta. Intenta de nuevo.')
       setLoading(false)
+      return
+    }
+    // Auto sign-in after registration (requires email confirmations disabled in Supabase)
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+    if (loginError) {
+      // Fallback: redirect to login
+      router.push('/login')
     } else {
-      setSuccess(true)
+      router.push('/dashboard')
+      router.refresh()
     }
   }
-
-  if (success) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <Card className="w-full max-w-md text-center shadow-lg">
-        <CardContent className="pt-8 space-y-4">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <Bot className="w-8 h-8 text-green-600" />
-          </div>
-          <h2 className="text-xl font-semibold">¡Revisa tu correo!</h2>
-          <p className="text-muted-foreground">
-            Te enviamos un enlace de confirmación a <strong>{email}</strong>.
-            Haz clic en el enlace para activar tu cuenta.
-          </p>
-          <Button variant="outline" className="w-full" onClick={() => router.push('/login')}>
-            Ir a iniciar sesión
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
