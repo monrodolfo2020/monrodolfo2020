@@ -1,5 +1,3 @@
-import { streamText } from 'ai'
-import { openrouter } from '@/lib/ai/openrouter'
 import { retrieveContext } from '@/lib/ai/rag'
 import { buildSystemPrompt } from '@/lib/ai/prompts'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -24,7 +22,6 @@ export async function POST(req: Request) {
     }
 
     const admin = await createAdminClient()
-
     const { data: agent, error: agentError } = await admin
       .from('agents').select('*').eq('id', agentId).single()
 
@@ -68,43 +65,78 @@ export async function POST(req: Request) {
     const abortController = new AbortController()
     const abortTimer = setTimeout(() => abortController.abort(), 50000)
 
-    const result = streamText({
-      model: openrouter(agent.model_id),
-      system: systemPrompt,
-      messages: messages.slice(-10).map((m: { role: string; content: string }) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-      abortSignal: abortController.signal,
-      onFinish: async ({ text }) => {
-        clearTimeout(abortTimer)
-        if (convId) {
-          await admin.from('messages').insert({
-            conversation_id: convId,
-            agent_id: agentId,
-            role: 'assistant',
-            content: text,
-          })
-          await admin.from('conversations')
-            .update({ last_active: new Date().toISOString(), message_count: messages.length + 1 })
-            .eq('id', convId)
-        }
-        await admin.from('agents')
-          .update({
-            total_messages: agent.total_messages + 2,
-            total_conversations: convId && !conversationId
-              ? agent.total_conversations + 1 : agent.total_conversations,
-          })
-          .eq('id', agentId)
+    const orResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://agentforgez.vercel.app',
+        'X-Title': 'AgentForge',
       },
+      body: JSON.stringify({
+        model: agent.model_id,
+        stream: true,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.slice(-10).map((m: { role: string; content: string }) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        ],
+      }),
+      signal: abortController.signal,
     })
 
+    if (!orResponse.ok) {
+      clearTimeout(abortTimer)
+      const errText = await orResponse.text()
+      console.error('OpenRouter error:', orResponse.status, errText)
+      return NextResponse.json(
+        { error: `Error del modelo (${orResponse.status}): ${errText.slice(0, 200)}` },
+        { status: 502 }
+      )
+    }
+
     const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
+    let fullText = ''
+
     const stream = new ReadableStream({
       async start(controller) {
+        const reader = orResponse.body?.getReader()
+        if (!reader) {
+          controller.enqueue(encoder.encode('[Error: no response body]'))
+          controller.close()
+          return
+        }
+
+        let buffer = ''
         try {
-          for await (const chunk of result.textStream) {
-            controller.enqueue(encoder.encode(chunk))
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
+
+            for (const line of lines) {
+              const trimmed = line.trim()
+              if (!trimmed || trimmed === 'data: [DONE]') continue
+              if (!trimmed.startsWith('data: ')) continue
+              try {
+                const json = JSON.parse(trimmed.slice(6)) as {
+                  choices?: Array<{ delta?: { content?: string } }>
+                }
+                const text = json.choices?.[0]?.delta?.content
+                if (text) {
+                  fullText += text
+                  controller.enqueue(encoder.encode(text))
+                }
+              } catch {
+                // skip malformed SSE lines
+              }
+            }
           }
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -113,6 +145,24 @@ export async function POST(req: Request) {
         } finally {
           clearTimeout(abortTimer)
           controller.close()
+
+          if (convId) {
+            await admin.from('messages').insert({
+              conversation_id: convId,
+              agent_id: agentId,
+              role: 'assistant',
+              content: fullText || '[sin respuesta]',
+            })
+            await admin.from('conversations')
+              .update({ last_active: new Date().toISOString(), message_count: messages.length + 1 })
+              .eq('id', convId)
+          }
+          await admin.from('agents').update({
+            total_messages: agent.total_messages + 2,
+            total_conversations: convId && !conversationId
+              ? agent.total_conversations + 1
+              : agent.total_conversations,
+          }).eq('id', agentId)
         }
       },
     })
