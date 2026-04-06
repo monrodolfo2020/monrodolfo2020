@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P&amp;ID Instrument Extractor</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- ================================================================
+       STATE 1: UPLOAD
+  ================================================================ -->
+  <div id="state-upload" class="state active">
+    <div class="container">
+      <header class="app-header">
+        <div class="logo-row">
+          <svg class="logo-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect width="48" height="48" rx="8" fill="#1F3864"/>
+            <circle cx="24" cy="24" r="10" stroke="white" stroke-width="2.5" fill="none"/>
+            <text x="24" y="28.5" text-anchor="middle" fill="white" font-size="11" font-family="system-ui" font-weight="700">P&amp;I</text>
+            <line x1="24" y1="8" x2="24" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="24" y1="34" x2="24" y2="40" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="8"  y1="24" x2="14" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="34" y1="24" x2="40" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <h1 class="app-title">P&amp;ID Instrument Extractor</h1>
+        </div>
+        <p class="app-subtitle">Upload a P&amp;ID engineering drawing PDF to extract all instrument tags</p>
+      </header>
+
+      <main class="upload-card">
+        <form id="upload-form" novalidate>
+
+          <!-- Drag-and-drop zone -->
+          <label id="drop-zone" class="drop-zone" for="file-input" tabindex="0"
+                 role="button" aria-label="Click or drag a PDF file here to upload">
+            <input type="file" id="file-input" name="pid_file" accept=".pdf" class="visually-hidden" />
+            <div class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="8" y="12" width="48" height="40" rx="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
+                <polyline points="24,32 32,24 40,32" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <line x1="32" y1="24" x2="32" y2="44" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="20" y1="52" x2="44" y2="52" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+              </svg>
+            </div>
+            <p class="drop-label">Drag &amp; drop your PDF here</p>
+            <p class="drop-sublabel">or <span class="link-text">click to browse</span></p>
+            <p id="file-name-display" class="file-name-display" aria-live="polite"></p>
+          </label>
+
+          <button type="submit" id="extract-btn" class="btn btn-primary" disabled>
+            Extract Instruments
+          </button>
+
+          <p class="help-text">Accepts PDF files up to 50 MB. Multi-page P&amp;IDs are fully supported.</p>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       STATE 2: PROCESSING
+  ================================================================ -->
+  <div id="state-processing" class="state">
+    <div class="container container--center">
+      <div class="spinner" role="status" aria-label="Processing"></div>
+      <h2 class="processing-title">Analyzing P&amp;ID drawing…</h2>
+      <p class="processing-note">This may take 30–60 seconds per page for complex drawings</p>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       STATE 3: RESULTS
+  ================================================================ -->
+  <div id="state-results" class="state">
+    <div class="container">
+      <header class="app-header">
+        <div class="logo-row">
+          <svg class="logo-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect width="48" height="48" rx="8" fill="#1F3864"/>
+            <circle cx="24" cy="24" r="10" stroke="white" stroke-width="2.5" fill="none"/>
+            <text x="24" y="28.5" text-anchor="middle" fill="white" font-size="11" font-family="system-ui" font-weight="700">P&amp;I</text>
+          </svg>
+          <h1 class="app-title">Extraction Complete</h1>
+        </div>
+      </header>
+
+      <main>
+        <!-- Summary card -->
+        <div class="result-card">
+          <div class="result-hero">
+            <span id="result-total" class="result-count">0</span>
+            <span class="result-count-label">Instruments Found</span>
+          </div>
+
+          <div class="result-meta-grid">
+            <div class="result-meta-item">
+              <span class="meta-label">Pages Analyzed</span>
+              <span id="result-pages" class="meta-value">—</span>
+            </div>
+            <div class="result-meta-item">
+              <span class="meta-label">P&amp;ID Number(s)</span>
+              <span id="result-pids" class="meta-value">—</span>
+            </div>
+            <div class="result-meta-item">
+              <span class="meta-label">System Title(s)</span>
+              <span id="result-titles" class="meta-value">—</span>
+            </div>
+          </div>
+
+          <div id="low-conf-warning" class="warning-badge" hidden>
+            <span class="warning-icon" aria-hidden="true">&#9888;</span>
+            <span id="low-conf-text"></span>
+          </div>
+        </div>
+
+        <!-- Instrument type badges -->
+        <div id="type-badges" class="badge-row" aria-label="Instrument type breakdown"></div>
+
+        <!-- Actions -->
+        <div class="action-row">
+          <button id="download-btn" class="btn btn-success" type="button">
+            &#8595; Download Excel Report
+          </button>
+          <button id="reset-btn" class="btn btn-secondary" type="button">
+            Analyze Another Drawing
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       STATE 4: ERROR
+  ================================================================ -->
+  <div id="state-error" class="state">
+    <div class="container container--center">
+      <div class="error-icon" aria-hidden="true">&#10060;</div>
+      <h2 class="error-title">Extraction Failed</h2>
+      <p id="error-message" class="error-message"></p>
+      <button id="retry-btn" class="btn btn-secondary" type="button">Try Again</button>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

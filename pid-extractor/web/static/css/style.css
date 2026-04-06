@@ -1,0 +1,406 @@
+/* ==========================================================================
+   PID Extractor — Style Sheet
+   Palette: Navy #1F3864 | Green #375623 | Gray #F5F5F5 | White #FFFFFF
+   ========================================================================== */
+
+/* ---------- Reset / Base ------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:        #1F3864;
+  --navy-light:  #2a4a80;
+  --green:       #375623;
+  --green-light: #4a7230;
+  --red:         #C00000;
+  --yellow:      #b8860b;
+  --bg:          #F5F5F5;
+  --surface:     #FFFFFF;
+  --border:      #D0D7E3;
+  --text:        #1a1a2e;
+  --text-muted:  #5c6680;
+  --shadow:      0 2px 12px rgba(31, 56, 100, 0.12);
+  --radius:      10px;
+  --font:        system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ---------- State management --------------------------------------------- */
+.state { display: none; width: 100%; }
+.state.active { display: block; }
+
+/* ---------- Layout -------------------------------------------------------- */
+.container {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.container--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  text-align: center;
+  gap: 1.25rem;
+}
+
+/* ---------- Header -------------------------------------------------------- */
+.app-header { margin-bottom: 2rem; }
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  padding-left: 56px;
+}
+
+/* ---------- Upload card --------------------------------------------------- */
+.upload-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+/* Drop zone */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-align: center;
+  user-select: none;
+  outline: none;
+}
+
+.drop-zone:hover,
+.drop-zone:focus {
+  border-color: var(--navy);
+  background: #f0f4fb;
+}
+
+.drop-zone.dragover {
+  border-color: var(--green);
+  background: #eef5e8;
+}
+
+.drop-zone.has-file {
+  border-color: var(--navy);
+  background: #f0f4fb;
+}
+
+.drop-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--navy);
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+.drop-icon svg { width: 100%; height: 100%; }
+
+.drop-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.drop-sublabel {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.link-text {
+  color: var(--navy);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.file-name-display {
+  margin-top: 0.85rem;
+  font-size: 0.85rem;
+  color: var(--navy);
+  font-weight: 500;
+  min-height: 1.2em;
+  word-break: break-all;
+}
+
+.help-text {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 1rem;
+}
+
+/* ---------- Buttons ------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-family: var(--font);
+  font-size: 0.97rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.75rem 1.75rem;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, opacity 0.18s, transform 0.1s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:active { transform: scale(0.98); }
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary — navy fill */
+.btn-primary {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+  width: 100%;
+  margin-top: 1.25rem;
+  padding: 0.85rem;
+  font-size: 1.02rem;
+}
+.btn-primary:not(:disabled):hover { background: var(--navy-light); border-color: var(--navy-light); }
+
+/* Secondary — outlined navy */
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy);
+}
+.btn-secondary:hover { background: #eef2fb; }
+
+/* Success — green */
+.btn-success {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+  font-size: 1.05rem;
+  padding: 0.85rem 2rem;
+}
+.btn-success:hover { background: var(--green-light); border-color: var(--green-light); }
+
+/* ---------- Processing state --------------------------------------------- */
+.spinner {
+  width: 56px;
+  height: 56px;
+  border: 5px solid var(--border);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.processing-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.processing-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  max-width: 360px;
+}
+
+/* ---------- Results card -------------------------------------------------- */
+.result-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.result-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.result-count {
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--navy);
+  line-height: 1;
+}
+
+.result-count-label {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.result-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.result-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.meta-value {
+  font-size: 0.92rem;
+  color: var(--text);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* Warning badge */
+.warning-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff8e6;
+  border: 1px solid #f0c040;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin-top: 1.25rem;
+  font-size: 0.88rem;
+  color: var(--yellow);
+  font-weight: 600;
+}
+
+.warning-icon { font-size: 1.1rem; }
+
+/* Instrument-type badge row */
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #e8edf7;
+  color: var(--navy);
+  border-radius: 20px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.type-badge .badge-count {
+  background: var(--navy);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ---------- Error state --------------------------------------------------- */
+.error-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.error-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--red);
+}
+
+.error-message {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+/* ---------- Utility ------------------------------------------------------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Responsive ---------------------------------------------------- */
+@media (min-width: 480px) {
+  .container { padding: 3rem 2rem 5rem; }
+  .upload-card { padding: 2.5rem; }
+  .app-title { font-size: 1.85rem; }
+}
+
+@media (min-width: 640px) {
+  .result-meta-grid { grid-template-columns: repeat(3, 1fr); }
+}
